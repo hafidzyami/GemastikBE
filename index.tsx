@@ -30,7 +30,8 @@ app.post(`/sample`, jsonParser, async (_, res) => {
         "ExponentPushToken[7g-DWtOVu-QUq-exg_o3Ys]",
         "ExponentPushToken[KnuXdVG0kATOzhTnMJXK5-]",
         "ExponentPushToken[znMzwIO0_7DPmUW2rWGqs4]",
-        "ExponentPushToken[RKyFLoOAyT5lKRO4buEXON]"
+        "ExponentPushToken[RKyFLoOAyT5lKRO4buEXON]",
+        "ExponentPushToken[iuY42iGeiZ8Qj_fUF1iWgW]",
       ],
       title: "Urgent Call from Paramedis",
       body: "Terdapat pasien darurat pada ambulans!",
