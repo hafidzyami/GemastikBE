@@ -13,6 +13,7 @@ const jsonParser = BodyParser.json();
 
 // Path to the data.json file
 const dataFilePath = path.join(__dirname, "data.json");
+const tokenFilePath = path.join(__dirname, "dataToken.json");
 
 app.post("/registerPushToken", jsonParser, async (req, res) => {
   const userId = String(req.body.userId);
@@ -21,26 +22,104 @@ app.post("/registerPushToken", jsonParser, async (req, res) => {
   res.status(200).send("success");
 });
 
+// Function to read tokens from dataToken.json
+const readTokensFromFile = () => {
+  try {
+    if (fs.existsSync(tokenFilePath)) {
+      const fileData = fs.readFileSync(tokenFilePath);
+      return JSON.parse(fileData.toString());
+    }
+    return { tokens: [] }; // Default structure if file doesn't exist
+  } catch (error) {
+    console.error("Error reading token file:", error);
+    return { tokens: [] }; // Default structure on error
+  }
+};
+
+const saveTokensToFile = (data : any) => {
+  try {
+    fs.writeFileSync(tokenFilePath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("Error writing token file:", error);
+  }
+};
+
+// Endpoint to add a new token
+app.post("/addToken", jsonParser, (req, res) => {
+  const { token } = req.body;
+  
+  // Validate request body
+  if (!token) {
+    return res.status(400).send("Token is required");
+  }
+  
+  try {
+    // Read existing tokens
+    const data = readTokensFromFile();
+    
+    // Check if token already exists to avoid duplicates
+    if (!data.tokens.includes(token)) {
+      // Add new token to the array
+      data.tokens.push(token);
+      
+      // Save updated data
+      saveTokensToFile(data);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Token added successfully",
+        tokens: data.tokens
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        message: "Token already exists",
+        tokens: data.tokens
+      });
+    }
+  } catch (error) {
+    console.error("Error in /addToken endpoint:", error);
+    return res.status(500).send("Internal server error");
+  }
+});
+
+// Endpoint to get all tokens
+app.get("/tokens", (req, res) => {
+  try {
+    const data = readTokensFromFile();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error in /tokens endpoint:", error);
+    res.status(500).send("Internal server error");
+  }
+});
+
+// Update the /sample endpoint to use tokens from dataToken.json
 app.post(`/sample`, jsonParser, async (_, res) => {
-  expo.sendPushNotificationsAsync([
-    {
-      to: [
-        "ExponentPushToken[tNKtAtJ1TG8P1KX0AIPc8z]",
-        "ExponentPushToken[sq1UZBB8C5JYubZFRPRBFx]",
-        "ExponentPushToken[7g-DWtOVu-QUq-exg_o3Ys]",
-        "ExponentPushToken[KnuXdVG0kATOzhTnMJXK5-]",
-        "ExponentPushToken[znMzwIO0_7DPmUW2rWGqs4]",
-        "ExponentPushToken[RKyFLoOAyT5lKRO4buEXON]",
-        "ExponentPushToken[iuY42iGeiZ8Qj_fUF1iWgW]",
-        "ExponentPushToken[0-8vd4KBLOrzOE7ZJK5J7z]",
-        "ExponentPushToken[ogvWSPE6X8ggr_AcheJ_RN]",
-        "ExponentPushToken[-3AIsKJU6A1yqsAZC7VkhH]"
-      ],
-      title: "Urgent Call from Paramedis",
-      body: "Terdapat pasien darurat pada ambulans!",
-    },
-  ]);
-  res.status(200).send("success");
+  try {
+    const tokenData = readTokensFromFile();
+    
+    if (!tokenData.tokens || tokenData.tokens.length === 0) {
+      return res.status(404).send("No tokens found");
+    }
+    
+    const notifications = await expo.sendPushNotificationsAsync([
+      {
+        to: tokenData.tokens,
+        title: "Urgent Call from Paramedis",
+        body: "Terdapat pasien darurat pada ambulans!",
+      },
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      message: "Notifications sent",
+      results: notifications
+    });
+  } catch (error) {
+    console.error("Error sending notifications:", error);
+    res.status(500).send("Error sending notifications");
+  }
 });
 
 const saveDataToFile = (newData : any) => {

@@ -7,7 +7,7 @@ import keyboard  # Import the keyboard library
 # Define the MQTT broker details
 broker = "broker.hivemq.com"
 port = 1883
-topic = ""
+topic = "ahms"
 
 # Create a client instance
 client = mqtt.Client()
